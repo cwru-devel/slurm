@@ -40,7 +40,7 @@
 #include <slurm/spank.h>
 
 #ifndef X11_LIBEXEC_PROG
-#define X11_LIBEXEC_PROG         "/usr/libexec/slurm-spank-x11"
+#define X11_LIBEXEC_PROG         "/usr/local/slurm/bin/slurm-spank-x11"
 #endif
 
 #define SPANK_X11_ENVVAR         "SLURM_SPANK_X11" 
