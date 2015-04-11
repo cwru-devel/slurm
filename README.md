@@ -1,3 +1,3 @@
-CWRU's SLURM adaptation contains:
+spank-x11:
 
-+ Extensions and bug fixes to contribs/torque (in versions 14.11.5 and 14.03.6)
++ Replaced perl path with hardcoded static perl path
