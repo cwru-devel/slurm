@@ -44,7 +44,7 @@
 use strict;
 use FindBin;
 use Getopt::Long 2.24 qw(:config no_ignore_case require_order);
-use lib "${FindBin::Bin}/../lib/perl";
+use lib qw(/usr/local/slurm/lib64/perl5);
 use autouse 'Pod::Usage' => qw(pod2usage);
 use Slurm ':all';
 use Switch;
@@ -68,6 +68,7 @@ my ($start_time,
     @additional_attributes,
     $help,
     $resp,
+    $x11,
     $man);
 
 my $sbatch = "${FindBin::Bin}/sbatch";
@@ -96,6 +97,7 @@ GetOptions('a=s'      => \$start_time,
 	   'V'        => \$export_env,
 	   'W=s'      => \@additional_attributes,
 	   'help|?'   => \$help,
+	   'X'	      => \$x11,
 	   'man'      => \$man,
 	   )
 	or pod2usage(2);
@@ -185,7 +187,7 @@ if ($resource_list) {
 my $command;
 
 if($interactive) {
-	$command = "$salloc";
+	$command = "$srun";
 
 #	Always want at least one node in the allocation
 	if (!$node_opts{node_cnt}) {
@@ -275,8 +277,9 @@ $command .= " --dependency=$depend"   if $depend;
 $command .= " --tmp=$res_opts{file}"  if $res_opts{file};
 $command .= " --mem=$res_opts{mem}"   if $res_opts{mem};
 $command .= " --nice=$res_opts{nice}" if $res_opts{nice};
+$command .= " --x11=first" if $x11;
 
-$command .= " --gres=gpu:$res_opts{naccelerators}"  if $res_opts{naccelerators};
+$command .= " --gres=gpu:$res_opts{gpus}"  if $res_opts{gpus};
 
 # Cray-specific options
 $command .= " -n$res_opts{mppwidth}"		    if $res_opts{mppwidth};
@@ -304,6 +307,7 @@ $command .= " $script" if $script;
 # that if interactive mode was requested, the standard output and standard
 # error are _not_ captured.
 if ($interactive) {
+	$command .= " --pty /bin/bash";
 	my $ret = system($command);
 	exit ($ret >> 8);
 } else {
@@ -361,7 +365,7 @@ sub parse_resource_list {
 		   'ncpus' => "",
 		   'nice' => "",
 		   'nodes' => "",
-		   'naccelerators' => "",
+		   'gpus' => "",
 		   'opsys' => "",
 		   'other' => "",
 		   'pcput' => "",
@@ -386,7 +390,7 @@ sub parse_resource_list {
 
 #	Protect the colons used to separate elements in walltime=hh:mm:ss.
 #	Convert to NNhNNmNNs format.
-	$rl =~ s/walltime=(\d{1,2}):(\d{2}):(\d{2})/walltime=$1h$2m$3s/;
+	$rl =~ s/walltime=(\d{1,3}):(\d{2}):(\d{2})/walltime=$1h$2m$3s/;
 
 	$rl =~ s/:/,/g;
 	foreach my $key (@keys) {
@@ -397,13 +401,13 @@ sub parse_resource_list {
 
 #	If needed, un-protect the walltime string.
 	if ($opt{walltime}) {
-		$opt{walltime} =~ s/(\d{1,2})h(\d{2})m(\d{2})s/$1:$2:$3/;
+		$opt{walltime} =~ s/(\d{1,3})h(\d{2})m(\d{2})s/$1:$2:$3/;
 #		Convert to minutes for SLURM.
 		$opt{walltime} = get_minutes($opt{walltime});
 	}
 
-	if($opt{accelerator} && $opt{accelerator} =~ /^[Tt]/ && !$opt{naccelerators}) {
-		$opt{naccelerators} = 1;
+	if($opt{accelerator} && $opt{accelerator} =~ /^[Tt]/ && !$opt{gpus}) {
+		$opt{gpus} = 1;
 	}
 
 	if($opt{cput}) {
