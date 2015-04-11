@@ -1,3 +1,14 @@
-CWRU's SLURM adaptation contains:
+Extensions and Bug-fix details follow.
 
-+ Extensions and bug fixes to contribs/torque (in versions 14.11.5 and 14.03.6)
+contribs/torque/qsub:
+
++ Added X11 (qsub -X) support
+
++ extended walltime's  HH to HHH 
+
++ modified gpu resource switch
+
+
+spank-x11:
+
++Perl path hard written 
