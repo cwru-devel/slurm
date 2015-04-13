@@ -1969,13 +1969,16 @@ static void _get_next_pbs_node_part(char *node_options, int *i)
 		(*i)++;
 }
 
-static void _parse_pbs_nodes_opts(char *node_opts)
+static void _parse_pbs_nodes_opts(char *node_opts,int *gpus)
 {
 	int i = 0;
 	char *temp = NULL;
 	int ppn = 0;
 	int node_cnt = 0;
 	hostlist_t hl = hostlist_create(NULL);
+
+
+	*gpus=0;
 
 	while (node_opts[i]) {
 		if (!strncmp(node_opts+i, "ppn=", 4)) {
@@ -1984,6 +1987,10 @@ static void _parse_pbs_nodes_opts(char *node_opts)
 			_get_next_pbs_node_part(node_opts, &i);
 		} else if (isdigit(node_opts[i])) {
 			node_cnt += strtol(node_opts+i, NULL, 10);
+			_get_next_pbs_node_part(node_opts, &i);
+	        } else if (!strncasecmp(node_opts+i, "gpus=", 5)) {
+                        i += 5;
+                        *gpus += strtol(node_opts+i,NULL,10);
 			_get_next_pbs_node_part(node_opts, &i);
 		} else if (isalpha(node_opts[i])) {
 			temp = _get_pbs_node_name(node_opts, &i);
@@ -2177,7 +2184,7 @@ static void _parse_pbs_resource_list(char *rl)
 				gpus = _get_int(temp, "naccelerators");
 				xfree(temp);
 			}
-		} else if (!strncasecmp(rl+i, "ncpus=", 6)) {
+                } else if (!strncasecmp(rl+i, "ncpus=", 6)) {
 			i += 6;
 			temp = _get_pbs_option_value(rl, &i, ':');
 			if (temp) {
@@ -2214,7 +2221,7 @@ static void _parse_pbs_resource_list(char *rl)
 				error("No value given for nodes");
 				exit(error_exit);
 			}
-			_parse_pbs_nodes_opts(temp);
+			_parse_pbs_nodes_opts(temp,&gpus);
 			xfree(temp);
 		} else if (!strncmp(rl+i, "opsys=", 6)) {
  			i+=6;
